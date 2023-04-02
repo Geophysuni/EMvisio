@@ -19,6 +19,7 @@ import numpy as np
 import imageio as iio
 from scipy import interpolate
 from emlibdotgeo import Model, FProblem
+from importGRD import importGRD
 
 
 mainWin = Tk()
@@ -85,12 +86,23 @@ def openCreateModel(event):
     def importFromMatr(event):
         filename = fd.askopenfilename(initialdir = os.getcwd())
         
-        modMatr =  np.exp(iio.imread(filename)[:, :, 0]/100)*100
+        xmin, xmax, zmin, zmax, matrix = importGRD(filename)
+        
+        minxEntry.delete(0,END)
+        maxxEntry.delete(0,END)
+        minzEntry.delete(0,END)
+        maxzEntry.delete(0,END)
+        
+        minxEntry.insert(END, str(xmin))
+        maxxEntry.insert(END, str(xmax))
+        minzEntry.insert(END, str(zmin))
+        maxzEntry.insert(END, str(zmax))
+        
         
         fig_model_win.clf()
         plt1 = fig_model_win.add_subplot(111)     
         
-        img = plt1.imshow(modMatr)
+        img = plt1.imshow(matrix)
         fig_model_win.colorbar(img, label = 'R, Ohm*m')
         
         fig_model_win.tight_layout()
@@ -99,16 +111,18 @@ def openCreateModel(event):
         try:
             with open('tmpmd', 'rb') as f:
                 modpar = pickle.load(f)
-            modpar['matrix'] = modMatr
+            modpar['matrix'] = matrix
             with open('tmpmd', 'wb') as f:
                 pickle.dump(modpar, f)
         except:
             modpar = {}
-            modpar['matrix'] = modMatr
+            modpar['matrix'] = matrix
             with open('tmpmd', 'wb') as f:
                 pickle.dump(modpar, f)
         
         return
+    
+    
     
     def setSize(event):
         
@@ -516,7 +530,9 @@ def runCalc(event):
         prob = 'mt'
     
     f = np.logspace(np.log10(float(frqMinEntry.get())), np.log10(float(frqMaxEntry.get())), int(frqNEntry.get()))
-        
+    
+    f = np.logspace(np.log10(5*10e-5), np.log10(10e+3), 120)
+    
     model = Model(modpar['matrix'])
     model.setSize(modpar['xlim'], modpar['zlim'])
 
